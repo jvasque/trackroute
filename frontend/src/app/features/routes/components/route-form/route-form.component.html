@@ -1,5 +1,5 @@
-<section class="route-form-card" aria-labelledby="create-route-title">
-  <h2 id="create-route-title">Crear ruta</h2>
+<section class="route-form-card" aria-labelledby="route-form-title">
+  <h2 id="route-form-title">{{ title }}</h2>
 
   @if (disabled) {
     <p class="info">La creación de rutas está deshabilitada por feature flag.</p>
@@ -73,10 +73,10 @@
 
     <div class="actions">
       <button type="submit" [disabled]="disabled || submitting">
-        {{ submitting ? 'Creando...' : 'Crear ruta' }}
+        {{ submitLabel }}
       </button>
-      <button type="button" class="secondary" (click)="reset()" [disabled]="submitting">
-        Limpiar
+      <button type="button" class="secondary" (click)="handleSecondaryAction()" [disabled]="submitting">
+        {{ secondaryLabel }}
       </button>
     </div>
   </form>

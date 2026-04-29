@@ -1,137 +1,127 @@
-# CHANGELOG FASE 2 - Edición e inhabilitación de rutas
+# CHANGELOG FASE 2
 
-## Objetivo
+## Objetivo de la fase
 
-Completar RF-01 en backend agregando detalle, edición e inhabilitación lógica de rutas sobre la base de Fase 1.
+Completar RF-01 agregando edicion de rutas e inhabilitacion logica end-to-end, manteniendo el stack actual y la arquitectura modular existente.
 
-## Cambios incluidos
+## Archivos agregados
 
-### Endpoints nuevos
+- `backend/src/modules/routes/application/get-route-by-id.use-case.ts`
+- `backend/src/modules/routes/application/get-route-by-id.use-case.spec.ts`
+- `backend/src/modules/routes/application/update-route.use-case.ts`
+- `backend/src/modules/routes/application/update-route.use-case.spec.ts`
+- `backend/src/modules/routes/application/soft-delete-route.use-case.ts`
+- `backend/src/modules/routes/application/soft-delete-route.use-case.spec.ts`
+- `backend/src/modules/routes/schemas/route-id-param.schema.ts`
+- `backend/src/modules/routes/schemas/update-route.schema.ts`
+- `frontend/src/app/app.component.ts`
+- `frontend/src/app/app.config.ts`
+- `frontend/src/app/app.routes.ts`
+- `frontend/src/app/core/config/feature-flags.service.ts`
+- `frontend/src/app/features/routes/components/route-form/route-form.component.ts`
+- `frontend/src/app/features/routes/components/route-form/route-form.component.html`
+- `frontend/src/app/features/routes/components/route-form/route-form.component.css`
+- `frontend/src/app/features/routes/components/route-form/route-form.component.spec.ts`
+- `frontend/src/app/features/routes/data-access/routes-api.service.ts`
+- `frontend/src/app/features/routes/models/route.model.ts`
+- `frontend/src/app/features/routes/pages/routes-page/routes-page.component.ts`
+- `frontend/src/app/features/routes/pages/routes-page/routes-page.component.html`
+- `frontend/src/app/features/routes/pages/routes-page/routes-page.component.css`
+- `frontend/src/app/features/routes/pages/routes-page/routes-page.component.spec.ts`
 
+## Archivos modificados
+
+- `README.md`
+- `backend/README.md`
+- `frontend/README.md`
+- `backend/.env.example`
+- `backend/CHANGELOG_FASE.md`
+- `backend/src/config/env.schema.ts`
+- `backend/src/config/env.service.ts`
+- `backend/src/config/feature-flags.service.ts`
+- `backend/src/modules/routes/domain/route.entity.ts`
+- `backend/src/modules/routes/domain/route.repository.ts`
+- `backend/src/modules/routes/dto/route-response.dto.ts`
+- `backend/src/modules/routes/infrastructure/prisma-route.repository.ts`
+- `backend/src/modules/routes/routes.controller.ts`
+- `backend/src/modules/routes/routes.module.ts`
+- `backend/test/routes.e2e-spec.ts`
+
+## Endpoints agregados/modificados
+
+- `GET /routes`
+  El listado sigue paginado y excluye rutas con soft delete.
 - `GET /routes/:id`
-  - Devuelve una ruta por id.
-  - Solo considera rutas no eliminadas (`deletedAt = null`).
-  - Responde `404` si no existe o fue inhabilitada.
-
+  Devuelve una ruta activa por id.
+- `POST /routes`
+  Se mantiene para creacion.
 - `PATCH /routes/:id`
-  - Edita parcialmente una ruta existente no eliminada.
-  - Valida body parcial con Zod.
-  - Rechaza body vacío.
-  - Responde `404` si la ruta no existe o fue inhabilitada.
-
+  Permite edicion parcial de una ruta existente.
 - `DELETE /routes/:id`
-  - Implementa soft delete.
-  - No elimina físicamente registros.
-  - Llena `deletedAt`.
-  - Cambia `status` a `INACTIVA`.
-  - La ruta deja de aparecer en `GET /routes`.
+  Realiza inhabilitacion logica seteando `deletedAt` y `status=INACTIVA`.
 
-### Feature flags agregadas
+## Variables de entorno nuevas
 
-- `FEATURE_ROUTES_UPDATE_ENABLED`
-  - Apaga `PATCH /routes/:id` con `403`.
+- `FEATURE_ROUTES_UPDATE_ENABLED=true`
+- `FEATURE_ROUTES_SOFT_DELETE_ENABLED=true`
 
-- `FEATURE_ROUTES_SOFT_DELETE_ENABLED`
-  - Apaga `DELETE /routes/:id` con `403`.
-
-### Feature flags mantenidas
+## Feature flags
 
 - `FEATURE_ROUTES_READ`
 - `FEATURE_ROUTES_CREATE`
 - `FEATURE_ROUTES_SEED`
+- `FEATURE_ROUTES_UPDATE_ENABLED`
+- `FEATURE_ROUTES_SOFT_DELETE_ENABLED`
 
-### Archivos agregados
+## Tests agregados
 
-```txt
-src/modules/routes/application/get-route-by-id.use-case.ts
-src/modules/routes/application/get-route-by-id.use-case.spec.ts
-src/modules/routes/application/update-route.use-case.ts
-src/modules/routes/application/update-route.use-case.spec.ts
-src/modules/routes/application/soft-delete-route.use-case.ts
-src/modules/routes/application/soft-delete-route.use-case.spec.ts
-src/modules/routes/schemas/route-id-param.schema.ts
-src/modules/routes/schemas/update-route.schema.ts
-```
+- Unitarios de `UpdateRouteUseCase`
+- Unitarios de `SoftDeleteRouteUseCase`
+- Unitarios de `GetRouteByIdUseCase`
+- E2E backend para `GET /routes/:id`
+- E2E backend para `PATCH /routes/:id`
+- E2E backend para `DELETE /routes/:id`
+- Frontend para render asincrono sin interaccion extra
+- Frontend para creacion con toast y reset
+- Frontend para edicion reutilizando el formulario
+- Frontend para inhabilitacion con confirmacion previa
 
-### Archivos actualizados
+## Decisiones tecnicas
 
-```txt
-.env.example
-README.md
-CHANGELOG_FASE.md
-src/config/env.schema.ts
-src/config/env.service.ts
-src/config/feature-flags.service.ts
-src/modules/routes/domain/route.entity.ts
-src/modules/routes/domain/route.repository.ts
-src/modules/routes/dto/route-response.dto.ts
-src/modules/routes/infrastructure/prisma-route.repository.ts
-src/modules/routes/routes.controller.ts
-src/modules/routes/routes.module.ts
-test/routes.e2e-spec.ts
-src/modules/routes/application/create-route.use-case.spec.ts
-src/modules/routes/application/list-routes.use-case.spec.ts
-```
+- Se reutiliza un solo formulario Angular para crear y editar, cambiando modo, labels y valores iniciales.
+- La confirmacion de inhabilitacion usa `window.confirm` para no introducir otra capa modal en esta fase.
+- Los mensajes de escritura se manejan con toasts no bloqueantes, separados del error banner del listado.
+- La escritura sigue centralizada en use cases y servicios de pagina, dejando espacio para requerir `ADMIN` despues sin rehacer contratos ni componentes.
+- El listado depende del backend para excluir soft deleted; el frontend solo refresca y vuelve a consultar.
 
-## Testing agregado o actualizado
+## Riesgos o limites conocidos
 
-### Unitarios
+- La confirmacion nativa del navegador es suficiente para la fase, pero luego puede reemplazarse por un dialogo consistente con el sistema visual.
+- El backend requiere `pnpm prisma generate` si el cliente de Prisma no fue regenerado despues de cambios de schema o instalacion limpia.
+- La autorizacion por rol `ADMIN` todavia no esta implementada.
 
-- `GetRouteByIdUseCase`
-  - Devuelve ruta existente.
-  - Respeta `FEATURE_ROUTES_READ`.
-  - Responde `NotFoundException` si no existe.
+## Comandos de validacion
 
-- `UpdateRouteUseCase`
-  - Edita una ruta existente.
-  - Respeta `FEATURE_ROUTES_UPDATE_ENABLED`.
-  - Responde `NotFoundException` si no existe o fue eliminada.
+- `cd backend && pnpm test`
+- `cd backend && pnpm test:e2e`
+- `cd frontend && pnpm exec tsc -p tsconfig.spec.json --noEmit`
+- `cd frontend && pnpm test`
+- `cd frontend && pnpm exec ng build --configuration development`
 
-- `SoftDeleteRouteUseCase`
-  - Inhabilita ruta.
-  - Cambia `status` a `INACTIVA`.
-  - Llena `deletedAt`.
-  - Respeta `FEATURE_ROUTES_SOFT_DELETE_ENABLED`.
+## Commits sugeridos
 
-### E2E backend
+- `feat(routes): habilitar edicion e inhabilitacion logica en backend`
+- `feat(frontend): agregar flujo de edicion e inhabilitacion de rutas`
+- `docs(fase-2): actualizar readmes y changelog de la fase`
 
-- `GET /routes/:id`
-- validación de id inválido
-- `PATCH /routes/:id`
-- validación de body vacío
-- validación de body inválido
-- `DELETE /routes/:id`
-- validación de id inválido
+## Checklist previo al PR
 
-## Validación arquitectónica
-
-- `RoutesController` sigue sin lógica de negocio.
-- Los use cases coordinan reglas de aplicación.
-- `RouteRepository` concentra el contrato de persistencia.
-- `PrismaRouteRepository` sigue siendo el único adapter que conoce Prisma.
-- `deletedAt` se usa como soft delete real y el listado principal lo excluye.
-- La futura autorización `ADMIN` para escritura puede integrarse en guards o use cases sin romper contratos.
-
-## SOLID aplicado
-
-- S: cada use case tiene una intención única: leer detalle, editar o inhabilitar.
-- O: la persistencia puede cambiar manteniendo `RouteRepository`.
-- L: `PrismaRouteRepository` cumple todos los métodos del contrato.
-- I: el contrato expone solo operaciones necesarias para RF-01.
-- D: los use cases dependen de abstracciones, no de Prisma.
-
-## No incluido en esta fase
-
-- Autenticación JWT.
-- Roles ADMIN/OPERADOR.
-- Guards de autorización.
-- Importación masiva por endpoint.
-- Integración SOAP.
-- Dashboard.
-- Docker.
-- CI/CD.
-- Frontend Angular: el ZIP recibido contiene backend solamente; no se agregó un workspace Angular nuevo para no alterar la raíz actual ni introducir una segunda aplicación sin base existente.
-
-## Nota de compatibilidad
-
-El schema Prisma no cambia respecto a Fase 1 porque `deletedAt` y `status` ya estaban modelados. No se requiere migración nueva por modelo; el comando `pnpm prisma:migrate --name init` sigue siendo válido para ambientes limpios.
+- [ ] `backend/.env.example` incluye flags de update y soft delete
+- [ ] `pnpm prisma generate` ejecutado en backend
+- [ ] `pnpm test` y `pnpm test:e2e` pasan en backend
+- [ ] `pnpm exec tsc -p tsconfig.spec.json --noEmit` pasa en frontend
+- [ ] `pnpm test` pasa en frontend
+- [ ] `pnpm exec ng build --configuration development` pasa en frontend
+- [ ] listado no muestra rutas soft deleted
+- [ ] editar refresca la tabla y mantiene render fluido
+- [ ] inhabilitar pide confirmacion y remueve la ruta del listado tras refrescar

@@ -74,6 +74,11 @@ button.secondary {
   color: #1f2937;
 }
 
+.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .filter-actions,
 .pagination,
 .table-header {
@@ -93,6 +98,16 @@ button.secondary {
 
 .table-wrap {
   overflow-x: auto;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  padding: 8px 10px;
+  white-space: nowrap;
 }
 
 table {
@@ -156,6 +171,12 @@ th {
   background: #ecfdf5;
   border: 1px solid #86efac;
   color: #166534;
+}
+
+.toast.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
 }
 
 .state.empty {

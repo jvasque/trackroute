@@ -1,29 +1,27 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { ApplicationRef, ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { FrontendFeatureFlagsService } from '../../../../core/config/feature-flags.service';
-import { RouteFormComponent } from '../../components/route-form/route-form.component';
+import { RouteFormComponent, RouteFormMode, RouteFormValue } from '../../components/route-form/route-form.component';
 import { RoutesApiService } from '../../data-access/routes-api.service';
-import { CreateRoutePayload, PaginatedRoutesResponse, RouteItem, RouteStatus, RoutesQuery } from '../../models/route.model';
+import { PaginatedRoutesResponse, RouteItem, RouteStatus, RoutesQuery } from '../../models/route.model';
 
 @Component({
   selector: 'app-routes-page',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouteFormComponent],
   templateUrl: './routes-page.component.html',
-  styleUrl: './routes-page.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styleUrl: './routes-page.component.css'
 })
 export class RoutesPageComponent implements OnInit, OnDestroy {
+  private readonly appRef = inject(ApplicationRef);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly routesApi = inject(RoutesApiService);
   private readonly featureFlags = inject(FrontendFeatureFlagsService);
   private readonly formBuilder = inject(NonNullableFormBuilder);
-  private readonly changeDetector = inject(ChangeDetectorRef);
-  private activeRequestId = 0;
+  private readonly ngZone = inject(NgZone);
   private successMessageTimeout: ReturnType<typeof setTimeout> | undefined;
-  private viewRefreshQueued = false;
-  private destroyed = false;
 
   @ViewChild(RouteFormComponent) private routeForm?: RouteFormComponent;
 
@@ -38,37 +36,39 @@ export class RoutesPageComponent implements OnInit, OnDestroy {
   });
 
   routes: RouteItem[] = [];
+  selectedRoute: RouteItem | null = null;
+  formMode: RouteFormMode = 'create';
   page = 1;
   readonly pageSize = 10;
   total = 0;
   totalPages = 0;
 
   loading = false;
-  creating = false;
+  saving = false;
+  deletingRouteId: number | null = null;
   errorMessage = '';
-  successMessage = '';
+  toastMessage = '';
+  toastTone: 'success' | 'error' = 'success';
 
   readonly listEnabled = this.featureFlags.isRoutesListEnabled();
   readonly createEnabled = this.featureFlags.isRoutesCreateEnabled();
+  readonly writeRequiresAdmin = true;
 
   ngOnInit(): void {
     this.loadRoutes();
   }
 
   ngOnDestroy(): void {
-    this.destroyed = true;
-    this.clearSuccessMessageTimeout();
+    this.clearToastTimeout();
   }
 
   loadRoutes(page = this.page): void {
     if (!this.listEnabled) {
       this.routes = [];
       this.errorMessage = 'El listado de rutas está deshabilitado por feature flag.';
-      this.requestViewUpdate();
       return;
     }
 
-    const requestId = ++this.activeRequestId;
     this.page = page;
     this.loading = true;
     this.errorMessage = '';
@@ -76,30 +76,34 @@ export class RoutesPageComponent implements OnInit, OnDestroy {
     this.routesApi
       .listRoutes(this.buildQuery())
       .pipe(finalize(() => {
-        if (requestId === this.activeRequestId) {
+        this.ngZone.run(() => {
           this.loading = false;
-          this.requestViewUpdate();
-        }
+          this.debugUi('listRoutes.finalize', { page: this.page, total: this.total, loading: this.loading });
+          this.flushView();
+        });
       }))
       .subscribe({
         next: (response) => {
-          if (requestId !== this.activeRequestId) {
-            return;
-          }
-
-          this.applyResponse(response);
-          this.requestViewUpdate();
+          this.ngZone.run(() => {
+            this.applyResponse(response);
+            this.debugUi('listRoutes.next', {
+              page: response.meta.page,
+              total: response.meta.total,
+              totalPages: response.meta.totalPages,
+              rows: response.data.length
+            });
+            this.flushView();
+          });
         },
         error: () => {
-          if (requestId !== this.activeRequestId) {
-            return;
-          }
-
-          this.routes = [];
-          this.total = 0;
-          this.totalPages = 0;
-          this.errorMessage = 'No fue posible cargar las rutas. Verifica que el backend esté corriendo.';
-          this.requestViewUpdate();
+          this.ngZone.run(() => {
+            this.routes = [];
+            this.total = 0;
+            this.totalPages = 0;
+            this.errorMessage = 'No fue posible cargar las rutas. Verifica que el backend esté corriendo.';
+            this.debugUi('listRoutes.error', { loading: this.loading });
+            this.flushView();
+          });
         }
       });
   }
@@ -131,32 +135,119 @@ export class RoutesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  createRoute(payload: CreateRoutePayload): void {
+  saveRoute(payload: RouteFormValue): void {
     if (!this.createEnabled) {
       return;
     }
 
-    this.creating = true;
+    this.saving = true;
     this.errorMessage = '';
-    this.clearSuccessMessage();
+    this.clearToast();
 
-    this.routesApi
-      .createRoute(payload)
+    const request$ = this.formMode === 'edit' && this.selectedRoute
+      ? this.routesApi.updateRoute(this.selectedRoute.id, payload)
+      : this.routesApi.createRoute(payload);
+
+    request$
       .pipe(finalize(() => {
-        this.creating = false;
-        this.requestViewUpdate();
+        this.ngZone.run(() => {
+          this.saving = false;
+          this.debugUi('saveRoute.finalize', { mode: this.formMode, saving: this.saving });
+          this.flushView();
+        });
       }))
       .subscribe({
         next: () => {
-          this.routeForm?.reset();
-          this.showSuccessMessage('Ruta creada exitosamente.');
-          this.loadRoutes(1);
+          this.ngZone.run(() => {
+            this.routeForm?.reset();
+            if (this.formMode === 'edit') {
+              this.showToast('Ruta actualizada exitosamente.', 'success');
+            } else {
+              this.showToast('Ruta creada exitosamente.', 'success');
+            }
+            this.cancelEdit();
+            this.debugUi('saveRoute.next', { mode: this.formMode, selectedRouteId: this.selectedRoute?.id ?? null });
+            this.loadRoutes(1);
+          });
         },
         error: () => {
-          this.errorMessage = 'No fue posible crear la ruta. Revisa los datos e intenta nuevamente.';
-          this.requestViewUpdate();
+          this.ngZone.run(() => {
+            this.showToast(
+              this.formMode === 'edit'
+                ? 'No fue posible actualizar la ruta. Revisa los datos e intenta nuevamente.'
+                : 'No fue posible crear la ruta. Revisa los datos e intenta nuevamente.',
+              'error'
+            );
+            this.debugUi('saveRoute.error', { mode: this.formMode });
+            this.flushView();
+          });
         }
       });
+  }
+
+  startEdit(route: RouteItem): void {
+    this.selectedRoute = route;
+    this.formMode = 'edit';
+    this.clearToast();
+    this.debugUi('startEdit', { routeId: route.id });
+    this.flushView();
+  }
+
+  cancelEdit(): void {
+    this.selectedRoute = null;
+    this.formMode = 'create';
+    this.routeForm?.reset();
+    this.debugUi('cancelEdit');
+    this.flushView();
+  }
+
+  disableRoute(route: RouteItem): void {
+    if (!this.createEnabled || this.deletingRouteId !== null) {
+      return;
+    }
+
+    const confirmed = window.confirm(`¿Deseas inhabilitar la ruta ${route.id} (${route.originCity} -> ${route.destinationCity})?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingRouteId = route.id;
+    this.errorMessage = '';
+    this.clearToast();
+
+    this.routesApi
+      .softDeleteRoute(route.id)
+      .pipe(finalize(() => {
+        this.ngZone.run(() => {
+          this.deletingRouteId = null;
+          this.debugUi('disableRoute.finalize', { routeId: route.id });
+          this.flushView();
+        });
+      }))
+      .subscribe({
+        next: () => {
+          this.ngZone.run(() => {
+            if (this.selectedRoute?.id === route.id) {
+              this.cancelEdit();
+            }
+            this.showToast('Ruta inhabilitada exitosamente.', 'success');
+            this.debugUi('disableRoute.next', { routeId: route.id });
+            this.loadRoutes(1);
+          });
+        },
+        error: () => {
+          this.ngZone.run(() => {
+            this.showToast('No fue posible inhabilitar la ruta. Intenta nuevamente.', 'error');
+            this.debugUi('disableRoute.error', { routeId: route.id });
+            this.flushView();
+          });
+        }
+      });
+  }
+
+  isDeleting(routeId: number): boolean {
+    return this.deletingRouteId === routeId;
   }
 
   private buildQuery(): RoutesQuery {
@@ -185,42 +276,52 @@ export class RoutesPageComponent implements OnInit, OnDestroy {
     this.totalPages = response.meta.totalPages;
   }
 
-  private showSuccessMessage(message: string): void {
-    this.successMessage = message;
-    this.clearSuccessMessageTimeout();
+  private showToast(message: string, tone: 'success' | 'error'): void {
+    this.toastMessage = message;
+    this.toastTone = tone;
+    this.clearToastTimeout();
     this.successMessageTimeout = setTimeout(() => {
-      this.successMessage = '';
-      this.successMessageTimeout = undefined;
-      this.requestViewUpdate();
+      this.ngZone.run(() => {
+        this.toastMessage = '';
+        this.successMessageTimeout = undefined;
+        this.debugUi('toast.timeout');
+        this.flushView();
+      });
     }, 3500);
-    this.requestViewUpdate();
+    this.flushView();
   }
 
-  private clearSuccessMessage(): void {
-    this.successMessage = '';
-    this.clearSuccessMessageTimeout();
-    this.requestViewUpdate();
+  private clearToast(): void {
+    this.toastMessage = '';
+    this.clearToastTimeout();
+    this.flushView();
   }
 
-  private clearSuccessMessageTimeout(): void {
+  private clearToastTimeout(): void {
     if (this.successMessageTimeout) {
       clearTimeout(this.successMessageTimeout);
       this.successMessageTimeout = undefined;
     }
   }
 
-  private requestViewUpdate(): void {
-    if (this.viewRefreshQueued || this.destroyed) {
-      return;
-    }
-
-    this.viewRefreshQueued = true;
+  private flushView(): void {
     queueMicrotask(() => {
-      this.viewRefreshQueued = false;
+      this.changeDetectorRef.detectChanges();
+      this.appRef.tick();
+    });
+  }
 
-      if (!this.destroyed) {
-        this.changeDetector.detectChanges();
-      }
+  private debugUi(event: string, payload?: Record<string, unknown>): void {
+    console.debug('[RoutesPageComponent]', event, {
+      inAngularZone: NgZone.isInAngularZone(),
+      loading: this.loading,
+      saving: this.saving,
+      deletingRouteId: this.deletingRouteId,
+      formMode: this.formMode,
+      selectedRouteId: this.selectedRoute?.id ?? null,
+      total: this.total,
+      rows: this.routes.length,
+      ...payload
     });
   }
 }
