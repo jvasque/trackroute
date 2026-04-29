@@ -24,4 +24,16 @@ export class FeatureFlagsService {
   isRoutesSoftDeleteEnabled(): boolean {
     return this.envService.getFlag('FEATURE_ROUTES_SOFT_DELETE_ENABLED');
   }
+
+  isTrackingEnabled(): boolean {
+    return this.envService.getFlag('FEATURE_TRACKING_ENABLED');
+  }
+
+  isSoapCacheEnabled(): boolean {
+    return this.envService.getFlag('FEATURE_SOAP_CACHE_ENABLED');
+  }
+
+  isSoapStubEnabled(): boolean {
+    return this.envService.getFlag('FEATURE_SOAP_STUB_ENABLED');
+  }
 }

@@ -7,10 +7,13 @@ import { UpdateRouteUseCase } from './update-route.use-case';
 describe('UpdateRouteUseCase', () => {
   const repository: jest.Mocked<RouteRepository> = {
     findMany: jest.fn(),
+    findActive: jest.fn(),
     findById: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    softDelete: jest.fn()
+    softDelete: jest.fn(),
+    findLatestTrackingSnapshot: jest.fn(),
+    createTrackingSnapshot: jest.fn()
   };
 
   const featureFlags: jest.Mocked<FeatureFlagsService> = {
@@ -18,7 +21,10 @@ describe('UpdateRouteUseCase', () => {
     isRoutesCreateEnabled: jest.fn(),
     isRoutesSeedEnabled: jest.fn(),
     isRoutesUpdateEnabled: jest.fn(),
-    isRoutesSoftDeleteEnabled: jest.fn()
+    isRoutesSoftDeleteEnabled: jest.fn(),
+    isTrackingEnabled: jest.fn(),
+    isSoapCacheEnabled: jest.fn(),
+    isSoapStubEnabled: jest.fn()
   } as unknown as jest.Mocked<FeatureFlagsService>;
 
   const now = new Date('2024-01-01T00:00:00.000Z');

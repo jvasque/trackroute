@@ -12,4 +12,8 @@ export class FrontendFeatureFlagsService {
   isRoutesCreateEnabled(): boolean {
     return environment.featureFlags.routesCreateEnabled;
   }
+
+  isTrackingEnabled(): boolean {
+    return environment.featureFlags.trackingEnabled;
+  }
 }

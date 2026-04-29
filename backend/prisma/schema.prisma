@@ -27,6 +27,7 @@ model Route {
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
   deletedAt          DateTime?   @map("deleted_at")
+  trackingSnapshots  RouteTrackingSnapshot[]
 
   @@index([originCity])
   @@index([destinationCity])
@@ -34,4 +35,21 @@ model Route {
   @@index([vehicleType])
   @@index([carrier])
   @@map("routes")
+}
+
+model RouteTrackingSnapshot {
+  id              Int      @id @default(autoincrement())
+  routeId         Int      @map("route_id")
+  lastLocation    String   @map("last_location")
+  latitude        Float?   @map("latitude")
+  longitude       Float?   @map("longitude")
+  progressPercent Int      @map("progress_percent")
+  etaMinutes      Int      @map("eta_minutes")
+  sourceTimestamp DateTime @map("source_timestamp")
+  createdAt       DateTime @default(now()) @map("created_at")
+  route           Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([routeId, createdAt(sort: Desc)])
+  @@index([createdAt])
+  @@map("route_tracking_snapshots")
 }

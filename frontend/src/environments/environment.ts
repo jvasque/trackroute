@@ -3,6 +3,7 @@ export const environment = {
   apiBaseUrl: 'http://localhost:3000',
   featureFlags: {
     routesListEnabled: true,
-    routesCreateEnabled: true
+    routesCreateEnabled: true,
+    trackingEnabled: true
   }
 } as const;

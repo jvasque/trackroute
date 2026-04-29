@@ -1,16 +1,19 @@
 # Frontend - Rutas
 
-Frontend Angular para las Fases 1B y 2 del flujo de rutas.
+Frontend Angular para las fases implementadas del flujo de rutas, incluyendo monitoreo de rutas activas.
 
 ## Cobertura actual
 
 - Ruta `/routes`.
+- Ruta `/monitoring`.
 - Tabla con filtros y paginacion.
 - Creacion de rutas.
 - Edicion de rutas reutilizando el mismo formulario.
 - Inhabilitacion con confirmacion previa.
 - Refresco del listado despues de crear, editar o inhabilitar.
 - Toasts informativos de exito y error en operaciones de escritura.
+- Polling cada 30 segundos para monitoreo de rutas activas.
+- Estados de loading, empty y error para el panel de monitoreo.
 
 ## Requisitos
 
@@ -29,6 +32,7 @@ Abrir:
 
 ```txt
 http://localhost:4200/routes
+http://localhost:4200/monitoring
 ```
 
 ## Configuracion
@@ -45,6 +49,7 @@ Valores actuales:
 apiBaseUrl: 'http://localhost:3000'
 featureFlags.routesListEnabled: true
 featureFlags.routesCreateEnabled: true
+featureFlags.trackingEnabled: true
 ```
 
 ## Tests

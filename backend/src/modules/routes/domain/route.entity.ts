@@ -47,3 +47,17 @@ export type PaginatedRoutes = {
     totalPages: number;
   };
 };
+
+export type RouteTrackingSnapshotEntity = {
+  id: number;
+  routeId: number;
+  lastLocation: string;
+  latitude: number | null;
+  longitude: number | null;
+  progressPercent: number;
+  etaMinutes: number;
+  sourceTimestamp: Date;
+  createdAt: Date;
+};
+
+export type CreateRouteTrackingSnapshotData = Omit<RouteTrackingSnapshotEntity, 'id' | 'createdAt'>;
