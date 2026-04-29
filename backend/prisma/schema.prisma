@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum RouteStatus {
+  ACTIVA
+  INACTIVA
+  SUSPENDIDA
+  EN_MANTENIMIENTO
+}
+
+model Route {
+  id                 Int         @id @default(autoincrement())
+  originCity         String      @map("origin_city")
+  destinationCity    String      @map("destination_city")
+  distanceKm         Int         @map("distance_km")
+  estimatedTimeHours Float       @map("estimated_time_hours")
+  vehicleType        String      @map("vehicle_type")
+  carrier            String
+  costUsd            Float       @map("cost_usd")
+  status             RouteStatus @default(ACTIVA)
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+  deletedAt          DateTime?   @map("deleted_at")
+
+  @@index([originCity])
+  @@index([destinationCity])
+  @@index([status])
+  @@index([vehicleType])
+  @@index([carrier])
+  @@map("routes")
+}
