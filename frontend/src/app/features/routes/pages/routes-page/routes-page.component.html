@@ -1,9 +1,9 @@
 <main class="page">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Fase 1B</p>
+      <p class="eyebrow">Fase 2</p>
       <h1>Rutas</h1>
-      <p>Consulta, filtra y crea rutas integradas con el backend NestJS.</p>
+      <p>Consulta, crea, edita e inhabilita rutas integradas con el backend NestJS.</p>
     </div>
   </header>
 
@@ -13,9 +13,9 @@
     </section>
   }
 
-  @if (successMessage) {
-    <div class="toast success" role="status" aria-live="polite">
-      {{ successMessage }}
+  @if (toastMessage) {
+    <div class="toast" [class.success]="toastTone === 'success'" [class.error]="toastTone === 'error'" role="status" aria-live="polite">
+      {{ toastMessage }}
     </div>
   }
 
@@ -61,9 +61,12 @@
     </section>
 
     <app-route-form
+      [mode]="formMode"
+      [initialValue]="selectedRoute"
       [disabled]="!createEnabled"
-      [submitting]="creating"
-      (createRoute)="createRoute($event)"
+      [submitting]="saving"
+      (saveRoute)="saveRoute($event)"
+      (cancelEdit)="cancelEdit()"
     />
   </section>
 
@@ -98,6 +101,7 @@
               <th>Transportista</th>
               <th>Costo</th>
               <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -113,6 +117,16 @@
                 <td>{{ route.costUsd | currency:'USD':'symbol':'1.0-2' }}</td>
                 <td>
                   <span class="badge">{{ route.status }}</span>
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button type="button" class="secondary action-button" (click)="startEdit(route)" [disabled]="saving || loading || deletingRouteId !== null">
+                      Editar
+                    </button>
+                    <button type="button" class="danger action-button" (click)="disableRoute(route)" [disabled]="saving || loading || deletingRouteId !== null">
+                      {{ isDeleting(route.id) ? 'Inhabilitando...' : 'Inhabilitar' }}
+                    </button>
+                  </div>
                 </td>
               </tr>
             }

@@ -17,12 +17,15 @@ describe('RoutesPageComponent', () => {
     costUsd: 390,
     status: 'ACTIVA' as const,
     createdAt: '2024-01-01T00:00:00.000Z',
-    updatedAt: '2024-01-01T00:00:00.000Z'
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    deletedAt: null
   };
 
   const renderComponent = async (overrides?: {
     listRoutes?: jasmine.Spy;
     createRoute?: jasmine.Spy;
+    updateRoute?: jasmine.Spy;
+    softDeleteRoute?: jasmine.Spy;
     listEnabled?: boolean;
     createEnabled?: boolean;
   }) => {
@@ -36,7 +39,13 @@ describe('RoutesPageComponent', () => {
           totalPages: 1
         }
       })),
-      createRoute: overrides?.createRoute ?? jasmine.createSpy('createRoute').and.returnValue(of(route))
+      createRoute: overrides?.createRoute ?? jasmine.createSpy('createRoute').and.returnValue(of(route)),
+      updateRoute: overrides?.updateRoute ?? jasmine.createSpy('updateRoute').and.returnValue(of(route)),
+      softDeleteRoute: overrides?.softDeleteRoute ?? jasmine.createSpy('softDeleteRoute').and.returnValue(of({
+        ...route,
+        status: 'INACTIVA' as const,
+        deletedAt: '2024-01-02T00:00:00.000Z'
+      }))
     };
 
     const featureFlags = {
@@ -60,6 +69,7 @@ describe('RoutesPageComponent', () => {
     expect(await screen.findByText('Bogotá')).toBeTruthy();
     expect(screen.getByText('Cali')).toBeTruthy();
     expect(screen.getByText('TransAndes')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeTruthy();
   });
 
   it('sends filters to API when filters are applied', async () => {
@@ -166,64 +176,63 @@ describe('RoutesPageComponent', () => {
     expect((costInput as HTMLInputElement).value).toBe('0');
   });
 
-  it('ignores stale route search responses', async () => {
-    const firstResponse = new Subject<{
-      data: typeof route[];
-      meta: {
-        page: number;
-        pageSize: number;
-        total: number;
-        totalPages: number;
-      };
-    }>();
-    const secondRoute = {
+  it('edits a route and refreshes the table', async () => {
+    const user = userEvent.setup();
+    const updatedRoute = {
       ...route,
-      id: 2,
-      originCity: 'Medellín',
-      destinationCity: 'Bogotá'
+      carrier: 'Carga Segura',
+      destinationCity: 'Barranquilla'
     };
-    const secondResponse = new Subject<{
-      data: typeof route[];
-      meta: {
-        page: number;
-        pageSize: number;
-        total: number;
-        totalPages: number;
-      };
-    }>();
-    const listRoutes = jasmine.createSpy('listRoutes').and.returnValues(firstResponse.asObservable(), secondResponse.asObservable());
+    const updateRoute = jasmine.createSpy('updateRoute').and.returnValue(of(updatedRoute));
+    const { routesApi } = await renderComponent({ updateRoute });
 
-    const { fixture } = await renderComponent({ listRoutes });
+    fireEvent.click(screen.getByRole('button', { name: 'Editar' }));
 
-    fixture.componentInstance.loadRoutes(1);
+    const form = within(screen.getByRole('region', { name: 'Editar ruta' }));
+    const destinationInput = form.getByLabelText('Destino') as HTMLInputElement;
+    const carrierInput = form.getByLabelText('Transportista') as HTMLInputElement;
 
-    secondResponse.next({
-      data: [secondRoute],
-      meta: {
-        page: 1,
-        pageSize: 10,
-        total: 1,
-        totalPages: 1
-      }
-    });
-    secondResponse.complete();
+    expect(destinationInput.value).toBe('Cali');
+    await user.clear(destinationInput);
+    await user.type(destinationInput, 'Barranquilla');
+    await user.clear(carrierInput);
+    await user.type(carrierInput, 'Carga Segura');
 
-    expect(await screen.findByText('Medellín')).toBeTruthy();
-
-    firstResponse.next({
-      data: [route],
-      meta: {
-        page: 1,
-        pageSize: 10,
-        total: 1,
-        totalPages: 1
-      }
-    });
-    firstResponse.complete();
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
     await waitFor(() => {
-      expect(screen.queryByText('Cali')).toBeFalsy();
+      expect(routesApi.updateRoute).toHaveBeenCalledWith(1, jasmine.objectContaining({
+        destinationCity: 'Barranquilla',
+        carrier: 'Carga Segura'
+      }));
+      expect(routesApi.listRoutes).toHaveBeenCalledTimes(2);
     });
+    expect(await screen.findByText('Ruta actualizada exitosamente.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Crear ruta' })).toBeTruthy();
+  });
+
+  it('confirms and soft deletes a route', async () => {
+    spyOn(window, 'confirm').and.returnValue(true);
+    const { routesApi } = await renderComponent();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Inhabilitar' }));
+
+    await waitFor(() => {
+      expect(window.confirm).toHaveBeenCalled();
+      expect(routesApi.softDeleteRoute).toHaveBeenCalledWith(1);
+      expect(routesApi.listRoutes).toHaveBeenCalledTimes(2);
+    });
+    expect(await screen.findByText('Ruta inhabilitada exitosamente.')).toBeTruthy();
+  });
+
+  it('does not soft delete a route when confirmation is cancelled', async () => {
+    spyOn(window, 'confirm').and.returnValue(false);
+    const { routesApi } = await renderComponent();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Inhabilitar' }));
+
+    expect(routesApi.softDeleteRoute).not.toHaveBeenCalled();
+    expect(routesApi.listRoutes).toHaveBeenCalledTimes(1);
   });
 
   it('shows error state when API fails', async () => {

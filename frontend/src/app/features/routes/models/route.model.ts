@@ -12,6 +12,7 @@ export type RouteItem = {
   status: RouteStatus;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 };
 
 export type RoutesQuery = {
@@ -44,3 +45,5 @@ export type CreateRoutePayload = {
   costUsd: number;
   status: RouteStatus;
 };
+
+export type UpdateRoutePayload = Partial<CreateRoutePayload>;

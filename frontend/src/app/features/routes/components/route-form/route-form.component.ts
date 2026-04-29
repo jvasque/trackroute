@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CreateRoutePayload, RouteStatus } from '../../models/route.model';
+import { CreateRoutePayload, RouteItem, RouteStatus } from '../../models/route.model';
+
+export type RouteFormMode = 'create' | 'edit';
+
+export type RouteFormValue = CreateRoutePayload;
 
 @Component({
   selector: 'app-route-form',
@@ -10,12 +14,15 @@ import { CreateRoutePayload, RouteStatus } from '../../models/route.model';
   templateUrl: './route-form.component.html',
   styleUrl: './route-form.component.css'
 })
-export class RouteFormComponent {
+export class RouteFormComponent implements OnChanges {
   private readonly formBuilder = inject(NonNullableFormBuilder);
 
   @Input({ required: true }) disabled = false;
   @Input({ required: true }) submitting = false;
-  @Output() createRoute = new EventEmitter<CreateRoutePayload>();
+  @Input() mode: RouteFormMode = 'create';
+  @Input() initialValue: RouteItem | null = null;
+  @Output() saveRoute = new EventEmitter<RouteFormValue>();
+  @Output() cancelEdit = new EventEmitter<void>();
 
   readonly statuses: RouteStatus[] = ['ACTIVA', 'INACTIVA', 'SUSPENDIDA', 'EN_MANTENIMIENTO'];
 
@@ -30,6 +37,25 @@ export class RouteFormComponent {
     status: ['ACTIVA' as RouteStatus, [Validators.required]]
   });
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialValue'] || changes['mode']) {
+      if (this.mode === 'edit' && this.initialValue) {
+        this.form.reset({
+          originCity: this.initialValue.originCity,
+          destinationCity: this.initialValue.destinationCity,
+          distanceKm: this.initialValue.distanceKm,
+          estimatedTimeHours: this.initialValue.estimatedTimeHours,
+          vehicleType: this.initialValue.vehicleType,
+          carrier: this.initialValue.carrier,
+          costUsd: this.initialValue.costUsd,
+          status: this.initialValue.status
+        });
+      } else {
+        this.reset();
+      }
+    }
+  }
+
   submit(): void {
     if (this.disabled || this.submitting) {
       return;
@@ -40,7 +66,7 @@ export class RouteFormComponent {
       return;
     }
 
-    this.createRoute.emit(this.form.getRawValue());
+    this.saveRoute.emit(this.form.getRawValue());
   }
 
   reset(): void {
@@ -54,6 +80,31 @@ export class RouteFormComponent {
       costUsd: 0,
       status: 'ACTIVA'
     });
+  }
+
+  handleSecondaryAction(): void {
+    if (this.mode === 'edit') {
+      this.cancelEdit.emit();
+      return;
+    }
+
+    this.reset();
+  }
+
+  get title(): string {
+    return this.mode === 'edit' ? 'Editar ruta' : 'Crear ruta';
+  }
+
+  get submitLabel(): string {
+    if (this.submitting) {
+      return this.mode === 'edit' ? 'Guardando...' : 'Creando...';
+    }
+
+    return this.mode === 'edit' ? 'Guardar cambios' : 'Crear ruta';
+  }
+
+  get secondaryLabel(): string {
+    return this.mode === 'edit' ? 'Cancelar' : 'Limpiar';
   }
 
   hasError(controlName: keyof typeof this.form.controls): boolean {

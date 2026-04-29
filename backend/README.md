@@ -1,27 +1,26 @@
 # Backend - Rutas
 
-Backend NestJS + TypeScript con Prisma + SQLite.
+Backend NestJS + Prisma + SQLite para la kata de TrackRoute.
 
 ## Requisitos
 
 - Node 22 LTS.
 - pnpm.
 
-## Instalación y ejecución
+## Instalacion y arranque
 
 ```bash
-cd backend
 pnpm install
 cp .env.example .env
-pnpm prisma:generate
-pnpm prisma:migrate --name init
+pnpm prisma generate
+pnpm prisma migrate dev --name init
 pnpm db:seed
 pnpm start:dev
 ```
 
-## Variables
+Servidor por defecto: `http://localhost:3000`.
 
-Ver `.env.example`.
+## Variables de entorno
 
 ```env
 NODE_ENV=development
@@ -35,32 +34,25 @@ FEATURE_ROUTES_UPDATE_ENABLED=true
 FEATURE_ROUTES_SOFT_DELETE_ENABLED=true
 ```
 
-## Endpoints disponibles
+## Endpoints
 
 ```txt
 GET    /routes
-POST   /routes
 GET    /routes/:id
+POST   /routes
 PATCH  /routes/:id
 DELETE /routes/:id
 ```
 
-El frontend inicial de Fase 1B solo consume:
+Notas:
 
-```txt
-GET  /routes
-POST /routes
-```
+- `DELETE /routes/:id` aplica soft delete y deja la ruta en estado `INACTIVA`.
+- El listado principal excluye rutas con `deletedAt`.
+- La autorizacion no se implementa en esta fase; la escritura queda centralizada en use cases para exigir `ADMIN` despues sin romper contratos.
 
-## Tests
+## Validacion
 
 ```bash
 pnpm test
 pnpm test:e2e
 ```
-
-## Notas
-
-- `DELETE /routes/:id` es soft delete si está disponible en el backend recibido.
-- No se implementa auth todavía.
-- CORS está configurado para `http://localhost:4200` por defecto.
