@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, RouteStatus as PrismaRouteStatus } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import {
+  CreateRouteTrackingSnapshotData,
   CreateRouteData,
   ListRoutesFilters,
   PaginatedRoutes,
   RouteEntity,
+  RouteTrackingSnapshotEntity,
   UpdateRouteData
 } from '../domain/route.entity';
 import { RouteRepository } from '../domain/route.repository';
@@ -50,6 +52,18 @@ export class PrismaRouteRepository implements RouteRepository {
     });
 
     return route ? this.toEntity(route) : null;
+  }
+
+  async findActive(): Promise<RouteEntity[]> {
+    const routes = await this.prisma.route.findMany({
+      where: {
+        deletedAt: null,
+        status: PrismaRouteStatus.ACTIVA
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return routes.map(this.toEntity);
   }
 
   async create(data: CreateRouteData): Promise<RouteEntity> {
@@ -97,6 +111,31 @@ export class PrismaRouteRepository implements RouteRepository {
     });
 
     return this.toEntity(deleted);
+  }
+
+  async findLatestTrackingSnapshot(routeId: number): Promise<RouteTrackingSnapshotEntity | null> {
+    const snapshot = await this.prisma.routeTrackingSnapshot.findFirst({
+      where: { routeId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return snapshot ? this.toTrackingSnapshotEntity(snapshot) : null;
+  }
+
+  async createTrackingSnapshot(data: CreateRouteTrackingSnapshotData): Promise<RouteTrackingSnapshotEntity> {
+    const snapshot = await this.prisma.routeTrackingSnapshot.create({
+      data: {
+        routeId: data.routeId,
+        lastLocation: data.lastLocation,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        progressPercent: data.progressPercent,
+        etaMinutes: data.etaMinutes,
+        sourceTimestamp: data.sourceTimestamp
+      }
+    });
+
+    return this.toTrackingSnapshotEntity(snapshot);
   }
 
   private buildWhere(filters: ListRoutesFilters): Prisma.RouteWhereInput {
@@ -147,6 +186,30 @@ export class PrismaRouteRepository implements RouteRepository {
       createdAt: route.createdAt,
       updatedAt: route.updatedAt,
       deletedAt: route.deletedAt
+    };
+  }
+
+  private toTrackingSnapshotEntity(snapshot: {
+    id: number;
+    routeId: number;
+    lastLocation: string;
+    latitude: number | null;
+    longitude: number | null;
+    progressPercent: number;
+    etaMinutes: number;
+    sourceTimestamp: Date;
+    createdAt: Date;
+  }): RouteTrackingSnapshotEntity {
+    return {
+      id: snapshot.id,
+      routeId: snapshot.routeId,
+      lastLocation: snapshot.lastLocation,
+      latitude: snapshot.latitude,
+      longitude: snapshot.longitude,
+      progressPercent: snapshot.progressPercent,
+      etaMinutes: snapshot.etaMinutes,
+      sourceTimestamp: snapshot.sourceTimestamp,
+      createdAt: snapshot.createdAt
     };
   }
 }

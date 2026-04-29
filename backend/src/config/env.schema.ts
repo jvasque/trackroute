@@ -14,7 +14,14 @@ export const envSchema = z.object({
   FEATURE_ROUTES_CREATE: booleanFromEnv.default(true),
   FEATURE_ROUTES_SEED: booleanFromEnv.default(true),
   FEATURE_ROUTES_UPDATE_ENABLED: booleanFromEnv.default(true),
-  FEATURE_ROUTES_SOFT_DELETE_ENABLED: booleanFromEnv.default(true)
+  FEATURE_ROUTES_SOFT_DELETE_ENABLED: booleanFromEnv.default(true),
+  FEATURE_TRACKING_ENABLED: booleanFromEnv.default(true),
+  FEATURE_SOAP_CACHE_ENABLED: booleanFromEnv.default(true),
+  FEATURE_SOAP_STUB_ENABLED: booleanFromEnv.default(true),
+
+  TRACKING_PROVIDER: z.enum(['stub', 'soap']).default('stub'),
+  SOAP_TRACKING_URL: z.string().url().default('http://localhost:4001/mock-soap/tracking'),
+  SOAP_TRACKING_TIMEOUT_MS: z.coerce.number().int().positive().default(5000)
 });
 
 export type Env = z.infer<typeof envSchema>;

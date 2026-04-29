@@ -7,7 +7,10 @@ type FeatureFlagKey =
   | 'FEATURE_ROUTES_CREATE'
   | 'FEATURE_ROUTES_SEED'
   | 'FEATURE_ROUTES_UPDATE_ENABLED'
-  | 'FEATURE_ROUTES_SOFT_DELETE_ENABLED';
+  | 'FEATURE_ROUTES_SOFT_DELETE_ENABLED'
+  | 'FEATURE_TRACKING_ENABLED'
+  | 'FEATURE_SOAP_CACHE_ENABLED'
+  | 'FEATURE_SOAP_STUB_ENABLED';
 
 @Injectable()
 export class EnvService {
@@ -27,6 +30,18 @@ export class EnvService {
 
   get databaseUrl(): string {
     return this.configService.get('DATABASE_URL', { infer: true });
+  }
+
+  get trackingProvider(): Env['TRACKING_PROVIDER'] {
+    return this.configService.get('TRACKING_PROVIDER', { infer: true });
+  }
+
+  get soapTrackingUrl(): string {
+    return this.configService.get('SOAP_TRACKING_URL', { infer: true });
+  }
+
+  get soapTrackingTimeoutMs(): number {
+    return this.configService.get('SOAP_TRACKING_TIMEOUT_MS', { infer: true });
   }
 
   getFlag(flag: FeatureFlagKey): boolean {

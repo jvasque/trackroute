@@ -1,0 +1,85 @@
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">RF-02</p>
+      <h1>Monitoreo</h1>
+      <p>Seguimiento de rutas activas con snapshots persistidos y polling cada 30 segundos.</p>
+    </div>
+  </header>
+
+  @if (!trackingEnabled) {
+    <section class="state empty">El monitoreo en tiempo real está deshabilitado.</section>
+  } @else {
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Rutas activas monitoreadas</h2>
+          <p>{{ items().length }} ruta(s) activas con seguimiento.</p>
+        </div>
+        <p class="timestamp">Actualiza cada 30 segundos</p>
+      </div>
+
+      @if (initialLoading()) {
+        <div class="state">Cargando monitoreo...</div>
+      } @else if (error() && !items().length) {
+        <div class="state error" role="alert">{{ error() }}</div>
+      } @else if (!items().length) {
+        <div class="state empty">No hay rutas activas para monitorear en este momento.</div>
+      } @else {
+        @if (refreshing()) {
+          <div class="state info">Actualizando datos...</div>
+        }
+
+        @if (error()) {
+          <div class="state error" role="status">{{ error() }}</div>
+        }
+
+        <div class="state info">Última actualización local: {{ lastUpdatedAt() | date:'short' }}</div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Ruta</th>
+                <th>Vehículo</th>
+                <th>Transportista</th>
+                <th>Última ubicación</th>
+                <!-- <th>Coordenadas</th> -->
+                <th>Avance</th>
+                <th>ETA</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items(); trackBy: trackByRouteId">
+                  <td>{{ item.route.id }}</td>
+                  <td>{{ item.route.originCity }} -> {{ item.route.destinationCity }}</td>
+                  <td>{{ item.route.vehicleType }}</td>
+                  <td>{{ item.route.carrier }}</td>
+                  <td>{{ item.tracking.lastLocation }}</td>
+                  <!-- <td>
+                    @if (item.tracking.latitude !== null && item.tracking.longitude !== null) {
+                      {{ item.tracking.latitude }}, {{ item.tracking.longitude }}
+                    } @else {
+                      Sin coordenadas
+                    }
+                  </td> -->
+                  <td>
+                    <div class="progress-cell">
+                      <div class="progress-track">
+                        <div class="progress-bar" [style.width.%]="item.tracking.progressPercent"></div>
+                      </div>
+                      <span>{{ item.tracking.progressPercent }}%</span>
+                    </div>
+                  </td>
+                  <td>{{ item.tracking.etaMinutes }} min</td>
+                  <td>{{ item.tracking.sourceTimestamp | date:'short' }}</td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</main>

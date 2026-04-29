@@ -2,7 +2,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { CreateRoutePayload, PaginatedRoutesResponse, RouteItem, RoutesQuery, UpdateRoutePayload } from '../models/route.model';
+import {
+  ActiveRoutesTrackingResponse,
+  CreateRoutePayload,
+  PaginatedRoutesResponse,
+  RouteItem,
+  RoutesQuery,
+  UpdateRoutePayload
+} from '../models/route.model';
 
 @Injectable({
   providedIn: 'root'
@@ -50,5 +57,9 @@ export class RoutesApiService {
 
   softDeleteRoute(id: number): Observable<RouteItem> {
     return this.http.delete<RouteItem>(`${this.baseUrl}/${id}`);
+  }
+
+  getActiveRoutesTracking(): Observable<ActiveRoutesTrackingResponse> {
+    return this.http.get<ActiveRoutesTrackingResponse>(`${this.baseUrl}/active/tracking`);
   }
 }

@@ -47,3 +47,27 @@ export type CreateRoutePayload = {
 };
 
 export type UpdateRoutePayload = Partial<CreateRoutePayload>;
+
+export type ActiveRouteTrackingItem = {
+  route: {
+    id: number;
+    originCity: string;
+    destinationCity: string;
+    vehicleType: string;
+    carrier: string;
+    status: RouteStatus;
+  };
+  tracking: {
+    lastLocation: string;
+    latitude: number | null;
+    longitude: number | null;
+    progressPercent: number;
+    etaMinutes: number;
+    sourceTimestamp: string;
+    createdAt: string;
+  };
+};
+
+export type ActiveRoutesTrackingResponse = {
+  data: ActiveRouteTrackingItem[];
+};

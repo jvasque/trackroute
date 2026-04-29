@@ -1,0 +1,10 @@
+.git
+.gitignore
+.DS_Store
+**/node_modules
+**/dist
+**/coverage
+**/.angular
+**/*.log
+backend/prisma/dev.db
+backend/prisma/*.db-journal

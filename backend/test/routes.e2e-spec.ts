@@ -1,8 +1,9 @@
-import { INestApplication } from '@nestjs/common';
+import { ForbiddenException, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppExceptionFilter } from '../src/common/errors/app-exception.filter';
 import { CreateRouteUseCase } from '../src/modules/routes/application/create-route.use-case';
+import { GetActiveRoutesTrackingUseCase } from '../src/modules/routes/application/get-active-routes-tracking.use-case';
 import { GetRouteByIdUseCase } from '../src/modules/routes/application/get-route-by-id.use-case';
 import { ListRoutesUseCase } from '../src/modules/routes/application/list-routes.use-case';
 import { SoftDeleteRouteUseCase } from '../src/modules/routes/application/soft-delete-route.use-case';
@@ -24,6 +25,10 @@ describe('RoutesController e2e', () => {
     execute: jest.fn()
   };
 
+  const getActiveRoutesTrackingUseCase = {
+    execute: jest.fn()
+  };
+
   const updateRouteUseCase = {
     execute: jest.fn()
   };
@@ -38,6 +43,7 @@ describe('RoutesController e2e', () => {
       providers: [
         { provide: ListRoutesUseCase, useValue: listRoutesUseCase },
         { provide: CreateRouteUseCase, useValue: createRouteUseCase },
+        { provide: GetActiveRoutesTrackingUseCase, useValue: getActiveRoutesTrackingUseCase },
         { provide: GetRouteByIdUseCase, useValue: getRouteByIdUseCase },
         { provide: UpdateRouteUseCase, useValue: updateRouteUseCase },
         { provide: SoftDeleteRouteUseCase, useValue: softDeleteRouteUseCase }
@@ -108,6 +114,46 @@ describe('RoutesController e2e', () => {
   it('GET /routes/:id rejects invalid id', async () => {
     await request(app.getHttpServer()).get('/routes/abc').expect(400);
     expect(getRouteByIdUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('GET /routes/active/tracking returns active routes tracking data', async () => {
+    getActiveRoutesTrackingUseCase.execute.mockResolvedValue({
+      data: [
+        {
+          route: {
+            id: 1,
+            originCity: 'Bogotá',
+            destinationCity: 'Cali',
+            vehicleType: 'CAMION',
+            carrier: 'TransAndes',
+            status: 'ACTIVA'
+          },
+          tracking: {
+            lastLocation: 'Corredor logístico',
+            latitude: 4.61,
+            longitude: -74.09,
+            progressPercent: 68,
+            etaMinutes: 80,
+            sourceTimestamp: '2024-01-01T00:00:00.000Z',
+            createdAt: '2024-01-01T00:00:10.000Z'
+          }
+        }
+      ]
+    });
+
+    const response = await request(app.getHttpServer()).get('/routes/active/tracking').expect(200);
+
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].route.status).toBe('ACTIVA');
+    expect(getActiveRoutesTrackingUseCase.execute).toHaveBeenCalled();
+  });
+
+  it('GET /routes/active/tracking returns 403 when tracking feature is disabled', async () => {
+    getActiveRoutesTrackingUseCase.execute.mockRejectedValue(
+      new ForbiddenException('Tracking feature is disabled')
+    );
+
+    await request(app.getHttpServer()).get('/routes/active/tracking').expect(403);
   });
 
   it('POST /routes creates route', async () => {
