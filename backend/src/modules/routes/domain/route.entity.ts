@@ -26,6 +26,8 @@ export type CreateRouteData = {
   status: RouteStatus;
 };
 
+export type UpdateRouteData = Partial<CreateRouteData>;
+
 export type ListRoutesFilters = {
   page: number;
   pageSize: number;

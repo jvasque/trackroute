@@ -7,13 +7,18 @@ import { ListRoutesUseCase } from './list-routes.use-case';
 describe('ListRoutesUseCase', () => {
   const repository: jest.Mocked<RouteRepository> = {
     findMany: jest.fn(),
-    create: jest.fn()
+    findById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    softDelete: jest.fn()
   };
 
   const featureFlags: jest.Mocked<FeatureFlagsService> = {
     isRoutesReadEnabled: jest.fn(),
     isRoutesCreateEnabled: jest.fn(),
-    isRoutesSeedEnabled: jest.fn()
+    isRoutesSeedEnabled: jest.fn(),
+    isRoutesUpdateEnabled: jest.fn(),
+    isRoutesSoftDeleteEnabled: jest.fn()
   } as unknown as jest.Mocked<FeatureFlagsService>;
 
   beforeEach(() => {
@@ -56,6 +61,7 @@ describe('ListRoutesUseCase', () => {
     expect(repository.findMany).toHaveBeenCalledWith({ page: 1, pageSize: 20 });
     expect(result.meta.total).toBe(1);
     expect(result.data[0].originCity).toBe('Bogotá');
+    expect(result.data[0].deletedAt).toBeNull();
   });
 
   it('throws ForbiddenException when feature flag is disabled', async () => {

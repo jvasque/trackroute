@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, RouteStatus as PrismaRouteStatus } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
-import { CreateRouteData, ListRoutesFilters, PaginatedRoutes, RouteEntity } from '../domain/route.entity';
+import {
+  CreateRouteData,
+  ListRoutesFilters,
+  PaginatedRoutes,
+  RouteEntity,
+  UpdateRouteData
+} from '../domain/route.entity';
 import { RouteRepository } from '../domain/route.repository';
 import { RouteStatus } from '../domain/route-status.enum';
 
@@ -35,6 +41,17 @@ export class PrismaRouteRepository implements RouteRepository {
     };
   }
 
+  async findById(id: number): Promise<RouteEntity | null> {
+    const route = await this.prisma.route.findFirst({
+      where: {
+        id,
+        deletedAt: null
+      }
+    });
+
+    return route ? this.toEntity(route) : null;
+  }
+
   async create(data: CreateRouteData): Promise<RouteEntity> {
     const created = await this.prisma.route.create({
       data: {
@@ -50,6 +67,36 @@ export class PrismaRouteRepository implements RouteRepository {
     });
 
     return this.toEntity(created);
+  }
+
+  async update(id: number, data: UpdateRouteData): Promise<RouteEntity> {
+    const updated = await this.prisma.route.update({
+      where: { id },
+      data: {
+        ...(data.originCity !== undefined && { originCity: data.originCity }),
+        ...(data.destinationCity !== undefined && { destinationCity: data.destinationCity }),
+        ...(data.distanceKm !== undefined && { distanceKm: data.distanceKm }),
+        ...(data.estimatedTimeHours !== undefined && { estimatedTimeHours: data.estimatedTimeHours }),
+        ...(data.vehicleType !== undefined && { vehicleType: data.vehicleType }),
+        ...(data.carrier !== undefined && { carrier: data.carrier }),
+        ...(data.costUsd !== undefined && { costUsd: data.costUsd }),
+        ...(data.status !== undefined && { status: data.status as PrismaRouteStatus })
+      }
+    });
+
+    return this.toEntity(updated);
+  }
+
+  async softDelete(id: number): Promise<RouteEntity> {
+    const deleted = await this.prisma.route.update({
+      where: { id },
+      data: {
+        status: PrismaRouteStatus.INACTIVA,
+        deletedAt: new Date()
+      }
+    });
+
+    return this.toEntity(deleted);
   }
 
   private buildWhere(filters: ListRoutesFilters): Prisma.RouteWhereInput {

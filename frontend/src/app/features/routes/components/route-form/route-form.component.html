@@ -1,0 +1,83 @@
+<section class="route-form-card" aria-labelledby="create-route-title">
+  <h2 id="create-route-title">Crear ruta</h2>
+
+  @if (disabled) {
+    <p class="info">La creación de rutas está deshabilitada por feature flag.</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="route-form">
+    <label>
+      Origen
+      <input type="text" formControlName="originCity" placeholder="Bogotá" />
+      @if (hasError('originCity')) {
+        <span class="field-error">Origen requerido.</span>
+      }
+    </label>
+
+    <label>
+      Destino
+      <input type="text" formControlName="destinationCity" placeholder="Medellín" />
+      @if (hasError('destinationCity')) {
+        <span class="field-error">Destino requerido.</span>
+      }
+    </label>
+
+    <label>
+      Distancia km
+      <input type="number" formControlName="distanceKm" min="1" />
+      @if (hasError('distanceKm')) {
+        <span class="field-error">Debe ser mayor a 0.</span>
+      }
+    </label>
+
+    <label>
+      Tiempo estimado horas
+      <input type="number" formControlName="estimatedTimeHours" min="0.1" step="0.1" />
+      @if (hasError('estimatedTimeHours')) {
+        <span class="field-error">Debe ser mayor a 0.</span>
+      }
+    </label>
+
+    <label>
+      Vehículo
+      <input type="text" formControlName="vehicleType" placeholder="CAMION" />
+      @if (hasError('vehicleType')) {
+        <span class="field-error">Vehículo requerido.</span>
+      }
+    </label>
+
+    <label>
+      Transportista
+      <input type="text" formControlName="carrier" placeholder="TransAndes" />
+      @if (hasError('carrier')) {
+        <span class="field-error">Transportista requerido.</span>
+      }
+    </label>
+
+    <label>
+      Costo USD
+      <input type="number" formControlName="costUsd" min="0" step="0.01" />
+      @if (hasError('costUsd')) {
+        <span class="field-error">Debe ser 0 o mayor.</span>
+      }
+    </label>
+
+    <label>
+      Estado
+      <select formControlName="status">
+        @for (status of statuses; track status) {
+          <option [value]="status">{{ status }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="actions">
+      <button type="submit" [disabled]="disabled || submitting">
+        {{ submitting ? 'Creando...' : 'Crear ruta' }}
+      </button>
+      <button type="button" class="secondary" (click)="reset()" [disabled]="submitting">
+        Limpiar
+      </button>
+    </div>
+  </form>
+</section>

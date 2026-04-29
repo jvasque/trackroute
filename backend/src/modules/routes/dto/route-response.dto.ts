@@ -12,6 +12,7 @@ export type RouteResponseDto = {
   status: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 };
 
 export type PaginatedRoutesResponseDto = {
@@ -31,7 +32,8 @@ export function toRouteResponseDto(route: RouteEntity): RouteResponseDto {
     costUsd: route.costUsd,
     status: route.status,
     createdAt: route.createdAt.toISOString(),
-    updatedAt: route.updatedAt.toISOString()
+    updatedAt: route.updatedAt.toISOString(),
+    deletedAt: route.deletedAt ? route.deletedAt.toISOString() : null
   };
 }
 
