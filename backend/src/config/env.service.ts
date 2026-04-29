@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Env } from './env.schema';
 
-type FeatureFlagKey = 'FEATURE_ROUTES_READ' | 'FEATURE_ROUTES_CREATE' | 'FEATURE_ROUTES_SEED';
+type FeatureFlagKey =
+  | 'FEATURE_ROUTES_READ'
+  | 'FEATURE_ROUTES_CREATE'
+  | 'FEATURE_ROUTES_SEED'
+  | 'FEATURE_ROUTES_UPDATE_ENABLED'
+  | 'FEATURE_ROUTES_SOFT_DELETE_ENABLED';
 
 @Injectable()
 export class EnvService {

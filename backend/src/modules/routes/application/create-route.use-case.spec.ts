@@ -7,13 +7,18 @@ import { CreateRouteUseCase } from './create-route.use-case';
 describe('CreateRouteUseCase', () => {
   const repository: jest.Mocked<RouteRepository> = {
     findMany: jest.fn(),
-    create: jest.fn()
+    findById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    softDelete: jest.fn()
   };
 
   const featureFlags: jest.Mocked<FeatureFlagsService> = {
     isRoutesReadEnabled: jest.fn(),
     isRoutesCreateEnabled: jest.fn(),
-    isRoutesSeedEnabled: jest.fn()
+    isRoutesSeedEnabled: jest.fn(),
+    isRoutesUpdateEnabled: jest.fn(),
+    isRoutesSoftDeleteEnabled: jest.fn()
   } as unknown as jest.Mocked<FeatureFlagsService>;
 
   beforeEach(() => {
@@ -58,6 +63,7 @@ describe('CreateRouteUseCase', () => {
     expect(repository.create).toHaveBeenCalledWith(input);
     expect(result.id).toBe(10);
     expect(result.status).toBe(RouteStatus.ACTIVA);
+    expect(result.deletedAt).toBeNull();
   });
 
   it('throws ForbiddenException when feature flag is disabled', async () => {

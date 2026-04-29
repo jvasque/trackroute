@@ -1,0 +1,134 @@
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Fase 1B</p>
+      <h1>Rutas</h1>
+      <p>Consulta, filtra y crea rutas integradas con el backend NestJS.</p>
+    </div>
+  </header>
+
+  @if (errorMessage) {
+    <section class="state error" role="alert">
+      {{ errorMessage }}
+    </section>
+  }
+
+  @if (successMessage) {
+    <div class="toast success" role="status" aria-live="polite">
+      {{ successMessage }}
+    </div>
+  }
+
+  <section class="content-grid">
+    <section class="panel" aria-labelledby="filters-title">
+      <h2 id="filters-title">Filtros</h2>
+
+      <form [formGroup]="filtersForm" (ngSubmit)="applyFilters()" class="filters">
+        <label>
+          Origen
+          <input type="text" formControlName="originCity" placeholder="Bogotá" />
+        </label>
+
+        <label>
+          Destino
+          <input type="text" formControlName="destinationCity" placeholder="Cali" />
+        </label>
+
+        <label>
+          Vehículo
+          <input type="text" formControlName="vehicleType" placeholder="CAMION" />
+        </label>
+
+        <label>
+          Transportista
+          <input type="text" formControlName="carrier" placeholder="TransAndes" />
+        </label>
+
+        <label>
+          Estado
+          <select formControlName="status">
+            @for (status of statuses; track status) {
+              <option [value]="status">{{ status || 'Todos' }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="filter-actions">
+          <button type="submit" [disabled]="loading">Aplicar filtros</button>
+          <button type="button" class="secondary" (click)="clearFilters()" [disabled]="loading">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <app-route-form
+      [disabled]="!createEnabled"
+      [submitting]="creating"
+      (createRoute)="createRoute($event)"
+    />
+  </section>
+
+  <section class="panel" aria-labelledby="routes-table-title">
+    <div class="table-header">
+      <div>
+        <h2 id="routes-table-title">Listado de rutas</h2>
+        <p>{{ total }} ruta(s) encontradas</p>
+      </div>
+      <button type="button" class="secondary" (click)="loadRoutes()" [disabled]="loading">Refrescar</button>
+    </div>
+
+    @if (loading && !routes.length) {
+      <div class="state">Cargando rutas...</div>
+    } @else if (!routes.length && !errorMessage) {
+      <div class="state empty">No hay rutas para los filtros seleccionados.</div>
+    } @else if (routes.length) {
+      @if (loading) {
+        <div class="state loading-inline" role="status">Actualizando rutas...</div>
+      }
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Origen</th>
+              <th>Destino</th>
+              <th>Distancia</th>
+              <th>Tiempo</th>
+              <th>Vehículo</th>
+              <th>Transportista</th>
+              <th>Costo</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (route of routes; track route.id) {
+              <tr>
+                <td>{{ route.id }}</td>
+                <td>{{ route.originCity }}</td>
+                <td>{{ route.destinationCity }}</td>
+                <td>{{ route.distanceKm }} km</td>
+                <td>{{ route.estimatedTimeHours }} h</td>
+                <td>{{ route.vehicleType }}</td>
+                <td>{{ route.carrier }}</td>
+                <td>{{ route.costUsd | currency:'USD':'symbol':'1.0-2' }}</td>
+                <td>
+                  <span class="badge">{{ route.status }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="pagination" aria-label="Paginación">
+        <button type="button" class="secondary" (click)="previousPage()" [disabled]="page <= 1 || loading">
+          Anterior
+        </button>
+        <span>Página {{ page }} de {{ totalPages || 1 }}</span>
+        <button type="button" class="secondary" (click)="nextPage()" [disabled]="page >= totalPages || loading">
+          Siguiente
+        </button>
+      </nav>
+    }
+  </section>
+</main>

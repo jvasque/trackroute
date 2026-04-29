@@ -12,7 +12,9 @@ export const envSchema = z.object({
 
   FEATURE_ROUTES_READ: booleanFromEnv.default(true),
   FEATURE_ROUTES_CREATE: booleanFromEnv.default(true),
-  FEATURE_ROUTES_SEED: booleanFromEnv.default(true)
+  FEATURE_ROUTES_SEED: booleanFromEnv.default(true),
+  FEATURE_ROUTES_UPDATE_ENABLED: booleanFromEnv.default(true),
+  FEATURE_ROUTES_SOFT_DELETE_ENABLED: booleanFromEnv.default(true)
 });
 
 export type Env = z.infer<typeof envSchema>;

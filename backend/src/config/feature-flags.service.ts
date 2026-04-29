@@ -16,4 +16,12 @@ export class FeatureFlagsService {
   isRoutesSeedEnabled(): boolean {
     return this.envService.getFlag('FEATURE_ROUTES_SEED');
   }
+
+  isRoutesUpdateEnabled(): boolean {
+    return this.envService.getFlag('FEATURE_ROUTES_UPDATE_ENABLED');
+  }
+
+  isRoutesSoftDeleteEnabled(): boolean {
+    return this.envService.getFlag('FEATURE_ROUTES_SOFT_DELETE_ENABLED');
+  }
 }
